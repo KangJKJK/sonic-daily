@@ -82,14 +82,14 @@ cat << 'EOF' > sonic-daily.mjs
 // sonic-daily.mjs
 import path from 'path';
 import fs from 'fs';
-import { Connection, Keypair } from '@solana/web3.js';
+import { Connection, Keypair, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
 
 // Named import 사용
 import { dailyMilestone } from './dailyMilestone.js';
-import { openBox } from './openBox.js';
+import { openBox } from './openBox.js'; // openBox.js에서 openBox 함수 가져오기
 
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
@@ -204,72 +204,6 @@ const getLoginToken = async (keyPair) => {
     }
 };
 
-// 미스터리 박스 개봉 및 보상 확인 함수
-const openBox = async (keyPair, auth) => {
-    const MAX_RETRIES = 5; // 최대 재시도 횟수
-    let retries = 0; // 현재 재시도 횟수
-
-    while (retries < MAX_RETRIES) {
-        try {
-            // 미스터리 박스 거래를 구축
-            const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': auth
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Build transaction 실패: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.data) {
-                // 트랜잭션을 생성하고 서명
-                const transactionBuffer = Buffer.from(data.data.hash, 'base64');
-                const transaction = sol.Transaction.from(transactionBuffer);
-                transaction.partialSign(keyPair);
-
-                // 트랜잭션 전송
-                const signature = await sendTransaction(transaction, keyPair);
-
-                // 미스터리 박스 개봉 요청
-                const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
-                    method: 'POST',
-                    headers: {
-                        ...defaultHeaders,
-                        'authorization': auth
-                    },
-                    body: JSON.stringify({
-                        'hash': signature
-                    })
-                });
-
-                if (!openResponse.ok) {
-                    throw new Error(`미스터리 박스 개봉 실패: ${openResponse.status}`);
-                }
-
-                const openData = await openResponse.json();
-
-                if (openData.data) {
-                    return { success: true, amount: openData.data.amount };
-                } else {
-                    throw new Error('미스터리 박스 개봉 데이터 오류');
-                }
-            } else {
-                throw new Error('미스터리 박스 거래 데이터 오류');
-            }
-        } catch (error) {
-            console.error(`미스터리 박스 개봉 오류 (${retries + 1}/${MAX_RETRIES}): ${error.message}`);
-            retries++;
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
-        }
-    }
-
-    return { success: false, message: '최대 재시도 횟수를 초과했습니다.' };
-};
-
 // 결과 기록을 위한 상태 객체
 const twisters = {
     put: (key, value) => {
@@ -296,7 +230,7 @@ const q = {
         // 로그인 토큰 가져오기
         const auth = await getLoginToken(keypair);
 
-      // CLAIM MILESTONES
+        // CLAIM MILESTONES
         twisters.put(`${publicKey}`, { 
             text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
@@ -318,7 +252,8 @@ Status       : ${result.message}`
 
         // 결과 기록
         let msg = '작업 완료';
-
+        
+        // CLAIM openbox
         if (q.openBox) {
             const info = await getUserInfo(auth);
             const totalBox = info.ring_monitor;
@@ -329,7 +264,7 @@ Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
             for (let i = 0; i < totalBox; i++) {
-                const result = await openBox(keypair, auth);
+                const result = await openBox(keypair, auth); // openBox.js에서 가져온 openBox 함수 호출
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
