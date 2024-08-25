@@ -215,6 +215,13 @@ const openBox = async (keyPair, auth) => {
         const progress = ((i + 1) / totalKeys * 100).toFixed(2); // 처리 진행 상태를 계산합니다.
         console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`); // 처리 상태를 출력합니다.
 
+        //일일 마일스톤 보상을 클레임합니다. (stage는 실제 단계로 대체해야 합니다.)
+        const milestoneResult = await dailyMilestone(auth, 1); // 예시로 stage 1을 사용합니다.
+        console.log(milestoneResult);
+        // 미스터리 박스를 엽니다.
+        const boxResult = await openBox(keypair, auth);
+        console.log(boxResult);
+        
         await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기 후 다음 개인키를 처리합니다.
     }
 })();
