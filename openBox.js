@@ -79,7 +79,7 @@ export const openBox = async (keyPair, auth) => {
                 const openData = await openResponse.json();
 
                 success = true;
-                return { success: true, message: `성공적으로 미스터리 박스를 열었습니다, ${openData.data.reward}!` };
+                return { success: true, message: `성공적으로 미스터리 박스를 열었습니다!` };
             }
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
