@@ -23,8 +23,7 @@ export const dailyMilestone = async (auth, stage) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            // 상태 확인
-            await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
+            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
                     ...defaultHeaders,
@@ -32,8 +31,14 @@ export const dailyMilestone = async (auth, stage) => {
                 }
             });
 
-            // 보상 클레임 요청
-            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
+            if (!response.ok) {
+                // 응답 상태 코드와 본문 로그
+                const responseBody = await response.text(); // 본문을 텍스트로 읽기
+                console.error(`HTTP error! status: ${response.status}, body: ${responseBody}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const claimResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
                     ...defaultHeaders,
@@ -42,11 +47,14 @@ export const dailyMilestone = async (auth, stage) => {
                 body: JSON.stringify({ 'stage': stage })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (!claimResponse.ok) {
+                // 응답 상태 코드와 본문 로그
+                const claimResponseBody = await claimResponse.text(); // 본문을 텍스트로 읽기
+                console.error(`Claim HTTP error! status: ${claimResponse.status}, body: ${claimResponseBody}`);
+                throw new Error(`HTTP error! status: ${claimResponse.status}`);
             }
 
-            const text = await response.text();
+            const text = await claimResponse.text();
             try {
                 const data = JSON.parse(text);
                 if (data.message === 'interact rewards already claimed') {
