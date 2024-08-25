@@ -6,10 +6,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}세번째 Sonic 데일리퀘스트 미션 스크립트를 시작합니다...${NC}"
+echo -e "${GREEN}Sonic 데일리퀘스트 미션 스크립트를 시작합니다...${NC}"
 
 # 작업 디렉토리 설정
-workDir2="/root/sonic-checkin"
+workDir2="/root/sonic-daily"
 
 # 기존 작업 디렉토리가 존재하면 삭제
 if [ -d "$workDir2" ]; then
@@ -44,6 +44,7 @@ fi
 
 # Node.js 모듈 설치
 echo -e "${YELLOW}필요한 Node.js 모듈을 설치합니다...${NC}"
+npm install
 npm install @solana/web3.js chalk bs58
 
 # 개인키 입력받기
@@ -52,28 +53,29 @@ read -p "Solana의 개인키를 쉼표로 구분하여 입력하세요: " privke
 # 개인키를 파일에 저장
 echo "$privkeys" > "$workDir2/sonicprivate.txt"
 
-# Node.js 스크립트 작성 (sonic-daily.mjs)
+# 파일 생성 확인
+if [ -f "$workDir2/sonicprivate.txt" ]; then
+    echo -e "${GREEN}개인키 파일이 성공적으로 생성되었습니다.${NC}"
+else
+    echo -e "${RED}개인키 파일 생성에 실패했습니다.${NC}"
+fi
+
+# Node.js 스크립트 작성 (sonic-checkin.mjs)
 echo -e "${YELLOW}Node.js 스크립트를 작성하고 있습니다...${NC}"
-cat << 'EOF' > sonic-daily.mjs
+cat << 'EOF' > sonic-checkin.mjs
 import fs from 'fs';
 import path from 'path';
-import prompts from 'prompts';
 import * as sol from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
 
 // 작업 디렉토리 설정
-const workDir2 = '/root/sonic-checkin';
+const workDir2 = '/root/sonic-daily';
 if (!fs.existsSync(workDir2)) {
     fs.mkdirSync(workDir2, { recursive: true });
 }
 process.chdir(workDir2);
-
-// 개인키를 쉼표로 분리
-read -p "Solana의 개인키를 쉼표로 구분하여 입력하세요. 버너지갑을 사용하세요.: " privkeys
-const privkeys = "$privkeys".split(',').map(key => key.trim());
-
 
 (async () => {
     // 콤마로 구분된 개인키 목록 읽기
@@ -227,15 +229,6 @@ const privkeys = "$privkeys".split(',').map(key => key.trim());
         }
     });
 
-    // 콤마로 구분된 개인키 목록 읽기
-    const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
-        .split(",")
-        .map(a => a.trim());
-
-    if (listAccounts.length === 0) {
-        throw new Error('sonicprivate.txt에 개인키를 하나 이상 입력해주세요.');
-    }
-
     const totalKeys = listAccounts.length;
 
     // 각 개인키에 대해 처리 수행
@@ -264,7 +257,7 @@ echo -e "${YELLOW}Node.js 스크립트를 작성했습니다.${NC}"
 
 # Node.js 스크립트 실행
 echo -e "${GREEN}Node.js 스크립트를 실행합니다...${NC}"
-node --no-deprecation sonic-daily.mjs
+node --no-deprecation sonic-checkin.mjs
 
 echo -e "${GREEN}모든 작업이 완료되었습니다. 컨트롤+A+D로 스크린을 종료해주세요.${NC}"
 echo -e "${GREEN}스크립트 작성자: https://t.me/kjkresearch${NC}"
