@@ -1,3 +1,4 @@
+// openBox.js
 import { Transaction } from '@solana/web3.js';
 import fetch from 'node-fetch';
 
@@ -24,28 +25,28 @@ export const openBox = async (keyPair, auth) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            const buildTxResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
+            const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
                     ...defaultHeaders,
                     'authorization': auth
                 }
             });
 
-            if (!buildTxResponse.ok) {
-                const buildTxResponseBody = await buildTxResponse.text();
-                console.error(`Build TX request failed! status: ${buildTxResponse.status}, body: ${buildTxResponseBody}`);
-                throw new Error(`HTTP error! status: ${buildTxResponse.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await buildTxResponse.json();
+            const data = await response.json();
 
             if (data.data) {
                 const transactionBuffer = Buffer.from(data.data.hash, 'base64');
                 const transaction = Transaction.from(transactionBuffer);
                 transaction.partialSign(keyPair);
 
+                // 트랜잭션 전송
                 const signature = await sendTransaction(transaction, keyPair);
 
+                // 미스터리 박스 개봉 요청
                 const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
                     method: 'POST',
                     headers: {
@@ -56,9 +57,7 @@ export const openBox = async (keyPair, auth) => {
                 });
 
                 if (!openResponse.ok) {
-                    const openResponseBody = await openResponse.text();
-                    console.error(`Open request failed! status: ${openResponse.status}, body: ${openResponseBody}`);
-                    throw new Error(`HTTP error! status: ${openResponse.status}`);
+                    throw new Error(`error! status: ${openResponse.status}`);
                 }
 
                 const openData = await openResponse.json();
@@ -68,15 +67,12 @@ export const openBox = async (keyPair, auth) => {
             }
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
-            retries += 1; // 재시도 횟수 증가
+            retries++;
             if (retries >= MAX_RETRIES) {
-                return '최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.';
+                console.log('최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.');
+                return `미스터리 박스 개봉 실패: ${e.message}`;
             }
             await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
         }
-    }
-
-    if (!success) {
-        return '미스터리 박스 개봉 실패. 다음 단계로 넘어갑니다.';
     }
 };
