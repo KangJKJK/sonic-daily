@@ -1,5 +1,20 @@
 import fetch from 'node-fetch';
 
+const defaultHeaders = {
+    'accept': '*/*',
+    'accept-language': 'en-US,en;q=0.7',
+    'content-type': 'application/json',
+    'priority': 'u=1, i',
+    'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Brave";v="126"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-site',
+    'sec-gpc': '1',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+};
+
 export const dailyMilestone = async (auth, stage) => {
     let success = false;
     while (!success) {
@@ -7,9 +22,7 @@ export const dailyMilestone = async (auth, stage) => {
             await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
-                    'accept': '*/*',
-                    'accept-language': 'en-US,en;q=0.7',
-                    'content-type': 'application/json',
+                    ...defaultHeaders,
                     'authorization': auth
                 }
             });
@@ -17,9 +30,7 @@ export const dailyMilestone = async (auth, stage) => {
             const response = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
-                    'accept': '*/*',
-                    'accept-language': 'en-US,en;q=0.7',
-                    'content-type': 'application/json',
+                    ...defaultHeaders,
                     'authorization': auth
                 },
                 body: JSON.stringify({ 'stage': stage })
