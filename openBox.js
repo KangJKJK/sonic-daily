@@ -1,9 +1,6 @@
 import { Transaction } from '@solana/web3.js';
 import fetch from 'node-fetch';
 
-// sendTransaction 함수가 필요합니다. 이 함수는 'sendTransaction.js'와 같은 파일에 정의되어야 합니다.
-import { sendTransaction } from './sendTransaction.js';
-
 export const openBox = async (keyPair, auth) => {
     let success = false;
     while (!success) {
