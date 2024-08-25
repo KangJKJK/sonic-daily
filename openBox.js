@@ -1,5 +1,3 @@
-// openBox.js
-import { Transaction } from '@solana/web3.js';
 import fetch from 'node-fetch';
 
 const defaultHeaders = {
@@ -33,7 +31,7 @@ export const openBox = async (keyPair, auth) => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`에러가 발생했습니다. status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -57,22 +55,20 @@ export const openBox = async (keyPair, auth) => {
                 });
 
                 if (!openResponse.ok) {
-                    throw new Error(`error! status: ${openResponse.status}`);
+                    throw new Error(`HTTP error! status: ${openResponse.status}`);
                 }
 
                 const openData = await openResponse.json();
 
                 success = true;
-                return `성공적으로 미스터리 박스를 열었습니다, ${openData.data.reward}!`;
+                return { success: true, message: `성공적으로 미스터리 박스를 열었습니다, ${openData.data.reward}!` };
             }
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
             retries++;
-            if (retries >= MAX_RETRIES) {
-                console.log('최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.');
-                return `미스터리 박스 개봉 실패: ${e.message}`;
-            }
             await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
         }
     }
+
+    return { success: false, message: '최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
 };
