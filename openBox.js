@@ -55,7 +55,7 @@ export const openBox = async (keyPair, auth) => {
                 });
 
                 if (!openResponse.ok) {
-                    throw new Error(`HTTP error! status: ${openResponse.status}`);
+                    throw new Error(`오류가 발생했습니다. status: ${openResponse.status}`);
                 }
 
                 const openData = await openResponse.json();
