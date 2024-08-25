@@ -204,48 +204,6 @@ const getLoginToken = async (keyPair) => {
     }
 };
 
-// 사용자 정보를 가져오는 함수
-const getUserInfo = async (auth) => {
-    const maxRetries = 5; // 최대 재시도 횟수
-    let attempt = 0;
-
-    while (attempt < maxRetries) {
-        try {
-            const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
-                headers: {
-                    'accept': '*/*',
-                    'accept-language': 'en-US,en;q=0.7',
-                    'content-type': 'application/json',
-                    'priority': 'u=1, i',
-                    'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Brave";v="126"',
-                    'sec-ch-ua-mobile': '?0',
-                    'sec-ch-ua-platform': '"Windows"',
-                    'sec-fetch-dest': 'empty',
-                    'sec-fetch-mode': 'cors',
-                    'sec-fetch-site': 'same-site',
-                    'sec-gpc': '1',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-                    'authorization': `Bearer ${auth}` // 인증 헤더 추가
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`사용자 정보 가져오기 실패: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            attempt++;
-            console.error(`사용자 정보 가져오기 오류 (시도 ${attempt}/${maxRetries}):`, error);
-            if (attempt >= maxRetries) {
-                throw new Error('최대 재시도 횟수를 초과했습니다.');
-            }
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기 후 재시도
-        }
-    }
-};
-
 // 결과 기록을 위한 상태 객체
 const twisters = {
     put: (key, value) => {
@@ -297,13 +255,12 @@ Status       : ${result.message}`
         
         // CLAIM openbox
         if (q.openBox) {
-            const info = await getUserInfo(auth);
-            const totalBox = info.ring_monitor;
+            // const info = await getUserInfo(auth); // getUserInfo 함수 제거
+            // const totalBox = info.ring_monitor; // getUserInfo 함수 제거
+            const totalBox = 0; // 대신 0으로 설정 (이 부분은 실제 요구 사항에 따라 조정 필요)
             twisters.put(`${publicKey}`, { 
                 text: `=== ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
@@ -312,8 +269,6 @@ Status       : Preparing to open ${totalBox} Mystery Box...`
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
                 });
                 if (!result.success) {
@@ -330,14 +285,13 @@ Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
             active: false,
             text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : ${msg}`
         });
         
         await new Promise(resolve => setTimeout(resolve, 3000)); // 3초 대기 후 다음 개인키를 처리합니다.
     }
 })();
+
 EOF
 
 echo -e "${YELLOW}Node.js 스크립트를 작성했습니다.${NC}"
