@@ -73,8 +73,10 @@ import { Connection, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
-import { dailyMilestone } from './dailyMilestone.js';
-import { openBox } from './openBox.js';
+import pkg from './dailyMilestone.js';
+const { dailyMilestone } = pkg;
+import pkgOpenBox from './openBox.js';
+const { openBox } = pkgOpenBox;
 
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
