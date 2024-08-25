@@ -105,9 +105,11 @@ async function sendTransaction(transaction, keyPair) {
         const rawTransaction = transaction.serialize(); // 거래를 직렬화하여 원시 거래 데이터를 생성합니다.
         const signature = await connection.sendRawTransaction(rawTransaction); // 원시 거래 데이터를 네트워크에 전송하고 서명을 받습니다.
         await connection.confirmTransaction(signature); // 거래가 확정될 때까지 기다립니다.
+        console.log(`트랜잭션 해시: ${signature}`); // 트랜잭션 해시를 출력합니다.
         return signature; // 거래의 서명을 반환합니다.
     } catch (error) {
         // 오류 발생 시 오류를 반환합니다.
+        console.error('트랜잭션 전송 오류:', error);
         return error;
     }
 }
@@ -141,7 +143,7 @@ const dailyMilestone = async (auth, stage) => {
                 })
             }).then(res => res.json());
 
-            if (data.message == 'interact rewards already claimed') {
+            if (data.message === 'interact rewards already claimed') {
                 // 이미 클레임한 경우 메시지를 반환합니다.
                 success = true;
                 return `마일스톤 ${stage} 이미 클레임했습니다!`;
@@ -150,9 +152,11 @@ const dailyMilestone = async (auth, stage) => {
             if (data.data) {
                 // 마일스톤 보상이 성공적으로 클레임되면 메시지를 반환합니다.
                 success = true;
+                console.log(`일일 마일스톤 보상 클레임 성공: ${data.data.transactionHash}`); // 트랜잭션 해시를 출력합니다.
                 return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
             }
         } catch (e) {
+            console.error('일일 마일스톤 클레임 오류:', e);
             // 오류 발생 시 재시도합니다.
         }
     }
@@ -176,6 +180,7 @@ const openBox = async (keyPair, auth) => {
                 const transaction = Transaction.from(transactionBuffer); // 거래 객체를 생성합니다.
                 transaction.partialSign(keyPair); // 거래에 서명을 추가합니다.
                 const signature = await sendTransaction(transaction, keyPair); // 거래를 네트워크에 전송하고 서명을 받습니다.
+
                 const open = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
                     method: 'POST',
                     headers: {
@@ -189,9 +194,11 @@ const openBox = async (keyPair, auth) => {
 
                 // 미스터리 박스를 성공적으로 열면 보상 메시지를 반환합니다.
                 success = true;
+                console.log(`미스터리 박스 개봉 트랜잭션 해시: ${signature}`); // 트랜잭션 해시를 출력합니다.
                 return `성공적으로 미스터리 박스를 열었습니다, ${open.data.reward}!`;
             }
         } catch (e) {
+            console.error('미스터리 박스 개봉 오류:', e);
             // 오류 발생 시 재시도합니다.
         }
     }
