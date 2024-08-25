@@ -198,14 +198,28 @@ const dailyMilestone = async (auth, stage) => {
                 }
             });
 
-            const data = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
+            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
                     ...defaultHeaders,
                     'authorization': auth
                 },
                 body: JSON.stringify({ 'stage': stage })
-            }).then(res => res.json());
+            });
+
+            // 응답 상태 확인
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const text = await response.text();
+            let data;
+
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error('응답이 JSON 형식이 아닙니다.');
+            }
 
             if (data.message === 'interact rewards already claimed') {
                 success = true;
@@ -218,7 +232,7 @@ const dailyMilestone = async (auth, stage) => {
                 return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
             }
         } catch (e) {
-            console.error('일일 마일스톤 클레임 오류:', e);
+            console.error('일일 마일스톤 클레임 오류:', e.message);
             // 오류 발생 시 재시도합니다.
         }
     }
