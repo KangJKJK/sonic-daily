@@ -104,22 +104,6 @@ const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'u
     .map(a => a.trim());
 
 if (listAccounts.length === 0) {
-    throw new
-
-
-// 작업 디렉토리 설정
-const workDir2 = '/root/sonic-daily';
-if (!fs.existsSync(workDir2)) {
-    fs.mkdirSync(workDir2, { recursive: true });
-}
-process.chdir(workDir2);
-
-// 개인키 목록 읽기
-const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
-    .split(",")
-    .map(a => a.trim());
-
-if (listAccounts.length === 0) {
     throw new Error('sonicprivate.txt에 개인키를 하나 이상 입력해주세요.');
 }
 
