@@ -257,7 +257,7 @@ Status       : ${result.message}`
         if (q.openBox) {
             // const info = await getUserInfo(auth); // getUserInfo 함수 제거
             // const totalBox = info.ring_monitor; // getUserInfo 함수 제거
-            const totalBox = 0; // 대신 0으로 설정 (이 부분은 실제 요구 사항에 따라 조정 필요)
+            const totalBox = 1; // 
             twisters.put(`${publicKey}`, { 
                 text: `=== ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
