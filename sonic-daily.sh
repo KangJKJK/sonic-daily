@@ -32,7 +32,7 @@ rm -f package-lock.json
 curl -o package-lock.json https://raw.githubusercontent.com/KangJKJK/sonic-checkin/main/package-lock.json
 rm -f dailyMilestone.js
 curl -o dailyMilestone.js https://raw.githubusercontent.com/KangJKJK/sonic-daily/main/dailyMilestone.js
-rm -f openBox.json
+rm -f openBox.js
 curl -o openBox.json https://raw.githubusercontent.com/KangJKJK/sonic-daily/main/openBox.js
 
 # npm 설치 여부 확인
