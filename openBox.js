@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { Transaction } from '@solana/web3.js'; // Ensure this is imported
+import { Transaction } from '@solana/web3.js';
 
 const defaultHeaders = {
     'accept': '*/*',
