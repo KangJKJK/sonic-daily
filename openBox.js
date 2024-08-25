@@ -24,7 +24,6 @@ export const openBox = async (keyPair, auth) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            // 빌드 트랜잭션 요청
             const buildTxResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
                     ...defaultHeaders,
@@ -45,10 +44,8 @@ export const openBox = async (keyPair, auth) => {
                 const transaction = Transaction.from(transactionBuffer);
                 transaction.partialSign(keyPair);
 
-                // 트랜잭션 전송
                 const signature = await sendTransaction(transaction, keyPair);
 
-                // 미스터리 박스 개봉 요청
                 const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
                     method: 'POST',
                     headers: {
