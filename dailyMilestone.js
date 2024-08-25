@@ -1,4 +1,3 @@
-// dailyMilestone.js
 import fetch from 'node-fetch';
 
 export const dailyMilestone = async (auth, stage) => {
