@@ -84,13 +84,19 @@ export const openBox = async (keyPair, auth) => {
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
 
-            retries++;
-            if (retries > MAX_RETRIES) {
-                // 최대 재시도 횟수를 초과한 경우 실패 메시지 반환
-                return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
+            // 429 오류를 명확히 감지
+            if (e.message.includes('429')) {
+                retries++;
+                if (retries > MAX_RETRIES) {
+                    // 최대 재시도 횟수를 초과한 경우 실패 메시지 반환
+                    return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
+                }
+                // 고정 지연 시간 후 재시도
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            } else {
+                // 기타 오류는 재시도하지 않고 즉시 처리
+                return { success: false, message: `미스터리 박스 개봉 오류: ${e.message}` };
             }
-            // 지연 시간 후 재시도
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
         }
     }
 
