@@ -289,11 +289,10 @@ const openBox = async (keyPair, auth) => {
         const keypair = getKeypairFromPrivateKey(privateKey);
         const publicKey = keypair.publicKey.toBase58();
         const initialBalance = await connection.getBalance(keypair.publicKey);
-        console.log(`공식키: ${publicKey}`);
+        console.log(`지갑주소: ${publicKey}`);
         const getToken = await getLoginToken(keypair);
         const getdaily = await dailyCheckin(keypair, getToken);
         console.log(getdaily);
-
         const progress = ((i + 1) / totalKeys * 100).toFixed(2);
         console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`);
 
