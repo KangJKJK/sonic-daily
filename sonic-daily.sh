@@ -253,32 +253,53 @@ Status       : ${result.message}`
         // 결과 기록
         let msg = '작업 완료';
         
-        // CLAIM openbox
-        if (q.openBox) {
-            // const info = await getUserInfo(auth); // getUserInfo 함수 제거
-            // const totalBox = info.ring_monitor; // getUserInfo 함수 제거
-            const totalBox = 1; // 
-            twisters.put(`${publicKey}`, { 
-                text: `=== ACCOUNT ${(index + 1)} ===
+// CLAIM openbox
+if (q.openBox) {
+    // const info = await getUserInfo(auth); // getUserInfo 함수 제거
+    // const totalBox = info.ring_monitor; // getUserInfo 함수 제거
+    const totalBox = 1; // 
+    twisters.put(`${publicKey}`, { 
+        text: `=== ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
 Status       : Preparing to open ${totalBox} Mystery Box...`
-            });
+    });
 
-            for (let i = 0; i < totalBox; i++) {
-                const result = await openBox(keypair, auth); // openBox 함수 호출
-                twisters.put(`${publicKey}`, { 
-                    text: ` === ACCOUNT ${(index + 1)} ===
+    for (let i = 0; i < totalBox; i++) {
+        let result = null;
+        let attempts = 0;
+        let success = false;
+
+        while (!success && attempts <= MAX_RETRIES) { // 실패 시 최대 재시도 횟수
+            result = await openBox(keypair, auth);
+            if (result.success) {
+                success = true;
+            } else {
+                attempts++;
+                if (attempts > MAX_RETRIES) {
+                    twisters.put(`${publicKey}`, { 
+                        text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
-                });
-                if (!result.success) {
+Status       : [${(i + 1)}/${totalBox}] Failed to open Mystery Box after ${MAX_RETRIES} attempts. Moving to next step.`
+                    });
                     break; // 실패 시 다음 단계로 넘어감
                 }
-                await delay(5); // 요청 사이의 지연 시간 설정
+                await delay(RETRY_DELAY_MS / 1000); // 지연 시간 후 재시도
             }
-
-            msg = `Earned Points\nYou have Mystery Box now.`;
         }
+
+        if (success) {
+            twisters.put(`${publicKey}`, { 
+                text: ` === ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
+            });
+        } else {
+            break; // 실패 시 다음 단계로 넘어감
+        }
+    }
+
+    msg = `Earned Points\nYou have Mystery Box now.`;
+}
 
         // 결과 기록
         twisters.put(`${publicKey}`, { 
