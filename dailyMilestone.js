@@ -1,4 +1,3 @@
-// dailyMilestone.js
 import fetch from 'node-fetch';
 
 const defaultHeaders = {
@@ -16,7 +15,7 @@ const defaultHeaders = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 };
 
-const MAX_RETRIES = 5; // 최대 재시도 횟수
+const MAX_RETRIES = 3; // 최대 재시도 횟수
 
 export const dailyMilestone = async (auth, stage) => {
     let success = false;
@@ -33,7 +32,7 @@ export const dailyMilestone = async (auth, stage) => {
             });
 
             if (!response.ok) {
-                throw new Error(`error! status: ${response.status}`);
+                throw new Error(`에러가 발생했습니다. status: ${response.status}`);
             }
 
             const claimResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
@@ -54,11 +53,11 @@ export const dailyMilestone = async (auth, stage) => {
                 const data = JSON.parse(text);
                 if (data.message === 'interact rewards already claimed') {
                     success = true;
-                    return `마일스톤 ${stage} 이미 클레임했습니다!`;
+                    return { success: true, message: `마일스톤 ${stage} 이미 클레임했습니다!` };
                 }
                 if (data.data) {
                     success = true;
-                    return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
+                    return { success: true, message: `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.` };
                 }
             } catch (e) {
                 throw new Error('응답이 JSON 형식이 아닙니다.');
@@ -66,11 +65,9 @@ export const dailyMilestone = async (auth, stage) => {
         } catch (e) {
             console.error('일일 마일스톤 클레임 오류:', e.message);
             retries++;
-            if (retries >= MAX_RETRIES) {
-                console.log('최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.');
-                return `일일 마일스톤 클레임 실패: ${e.message}`;
-            }
             await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
         }
     }
+
+    return { success: false, message: '최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
 };
