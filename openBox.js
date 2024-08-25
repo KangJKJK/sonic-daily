@@ -1,4 +1,4 @@
-iimport fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { Transaction } from '@solana/web3.js';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
 
