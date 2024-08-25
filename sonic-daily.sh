@@ -204,6 +204,41 @@ const getLoginToken = async (keyPair) => {
     }
 };
 
+// 사용자 정보를 가져오는 함수
+const getUserInfo = async (auth) => {
+    try {
+        const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
+            headers: {
+                'accept': '*/*',
+                'accept-language': 'en-US,en;q=0.7',
+                'content-type': 'application/json',
+                'authorization': auth,
+                'origin': 'https://odyssey.sonic.game',
+                'priority': 'u=1, i',
+                'referer': 'https://odyssey.sonic.game/',
+                'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Brave";v="126"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'empty',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-site': 'same-site',
+                'sec-gpc': '1',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`사용자 정보 가져오기 실패: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('사용자 정보 가져오기 오류:', error);
+        throw error;
+    }
+};
+
 // 결과 기록을 위한 상태 객체
 const twisters = {
     put: (key, value) => {
@@ -260,6 +295,8 @@ Status       : ${result.message}`
             twisters.put(`${publicKey}`, { 
                 text: `=== ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
 Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
@@ -268,6 +305,8 @@ Status       : Preparing to open ${totalBox} Mystery Box...`
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
 Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
                 });
                 if (!result.success) {
@@ -284,6 +323,8 @@ Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
             active: false,
             text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
 Status       : ${msg}`
         });
         
