@@ -115,39 +115,6 @@ async function sendTransaction(transaction, keyPair) {
 // 지연을 위한 함수 (초 단위)
 const delay = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
-// 로그인 토큰을 가져오는 함수
-const getLoginToken = async (keyPair) => {
-    let success = false;
-    while (!success) {
-        try {
-            // 로그인 인증 요청을 보냅니다.
-            const message = await fetch(`https://odyssey-api.sonic.game/auth/sonic/challenge?wallet=${keyPair.publicKey}`, {
-                headers: defaultHeaders
-            }).then(res => res.json());
-
-            const sign = nacl.sign.detached(Buffer.from(message.data), keyPair.secretKey); // 메시지에 서명합니다.
-            const signature = Buffer.from(sign).toString('base64'); // 서명을 base64로 인코딩합니다.
-            const publicKey = keyPair.publicKey.toBase58(); // 공개키를 base58로 변환합니다.
-            const addressEncoded = Buffer.from(keyPair.publicKey.toBytes()).toString("base64"); // 공개키를 base64로 인코딩합니다.
-            const authorize = await fetch('https://odyssey-api.sonic.game/auth/sonic/authorize', {
-                method: 'POST',
-                headers: defaultHeaders,
-                body: JSON.stringify({
-                    'address': `${publicKey}`,
-                    'address_encoded': `${addressEncoded}`,
-                    'signature': `${signature}`
-                })
-            }).then(res => res.json());
-
-            const token = authorize.data.token; // 응답에서 토큰을 추출합니다.
-            success = true;
-            return token; // 토큰을 반환합니다.
-        } catch (e) {
-            // 오류 발생 시 재시도합니다.
-        }
-    }
-};
-
 // 일일 마일스톤 보상을 클레임하는 함수
 const dailyMilestone = async (auth, stage) => {
     let success = false;
