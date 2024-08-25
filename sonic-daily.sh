@@ -209,10 +209,7 @@ const openBox = async (keyPair, auth) => {
         if (!getToken) {
             console.log(`토큰을 가져오는 데 실패했습니다.`); // 토큰을 가져오지 못한 경우 메시지를 출력합니다.
             continue; // 다음 개인키로 넘어갑니다.
-        }
-
-        const getdaily = await dailyCheckin(keypair, getToken); // 일일 체크인을 수행합니다.
-        console.log(getdaily); // 체크인 결과를 출력합니다.
+        }.
         const progress = ((i + 1) / totalKeys * 100).toFixed(2); // 처리 진행 상태를 계산합니다.
         console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`); // 처리 상태를 출력합니다.
 
