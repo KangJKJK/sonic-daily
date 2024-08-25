@@ -23,7 +23,8 @@ export const dailyMilestone = async (auth, stage) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
+            // 상태 요청
+            const stateResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
                     ...defaultHeaders,
@@ -31,13 +32,13 @@ export const dailyMilestone = async (auth, stage) => {
                 }
             });
 
-            if (!response.ok) {
-                // 응답 상태 코드와 본문 로그
-                const responseBody = await response.text(); // 본문을 텍스트로 읽기
-                console.error(`HTTP error! status: ${response.status}, body: ${responseBody}`);
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (!stateResponse.ok) {
+                const responseBody = await stateResponse.text();
+                console.error(`State request failed! status: ${stateResponse.status}, body: ${responseBody}`);
+                throw new Error(`HTTP error! status: ${stateResponse.status}`);
             }
 
+            // 마일스톤 클레임
             const claimResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
@@ -48,9 +49,8 @@ export const dailyMilestone = async (auth, stage) => {
             });
 
             if (!claimResponse.ok) {
-                // 응답 상태 코드와 본문 로그
-                const claimResponseBody = await claimResponse.text(); // 본문을 텍스트로 읽기
-                console.error(`Claim HTTP error! status: ${claimResponse.status}, body: ${claimResponseBody}`);
+                const claimResponseBody = await claimResponse.text();
+                console.error(`Claim request failed! status: ${claimResponse.status}, body: ${claimResponseBody}`);
                 throw new Error(`HTTP error! status: ${claimResponse.status}`);
             }
 
