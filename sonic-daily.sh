@@ -60,8 +60,10 @@ else
     echo -e "${RED}개인키 파일 생성에 실패했습니다.${NC}"
 fi
 
-# Node.js 스크립트 작성 (sonic-checkin.mjs)
+# Node.js 스크립트 작성 (sonic-daily.mjs)
 echo -e "${YELLOW}Node.js 스크립트를 작성하고 있습니다...${NC}"
+cat << 'EOF' > sonic-daily.mjs
+// sonic-daily.mjs
 import path from 'path';
 import fs from 'fs';
 import { Connection, Keypair, Transaction } from '@solana/web3.js';
@@ -335,7 +337,7 @@ const openBox = async (keyPair, auth) => {
 
 // 개인키 처리
 (async () => {
-    const totalKeys = listAccounts.length; // totalKeys 정의
+    const totalKeys = listAccounts.length;
     for (let i = 0; i < totalKeys; i++) {
         const privateKey = listAccounts[i];
         const keypair = getKeypairFromPrivateKey(privateKey);
