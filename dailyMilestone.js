@@ -23,7 +23,6 @@ export const dailyMilestone = async (auth, stage) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            // 상태 요청
             const stateResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
@@ -38,7 +37,6 @@ export const dailyMilestone = async (auth, stage) => {
                 throw new Error(`HTTP error! status: ${stateResponse.status}`);
             }
 
-            // 마일스톤 클레임
             const claimResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
@@ -66,6 +64,7 @@ export const dailyMilestone = async (auth, stage) => {
                     return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
                 }
             } catch (e) {
+                console.error('응답이 JSON 형식이 아닙니다:', text);
                 throw new Error('응답이 JSON 형식이 아닙니다.');
             }
         } catch (e) {
