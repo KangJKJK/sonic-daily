@@ -206,10 +206,7 @@ const openBox = async (keyPair, auth) => {
         const publicKey = keypair.publicKey.toBase58(); // 공개키를 base58로 변환합니다.
         const initialBalance = await connection.getBalance(keypair.publicKey); // 초기 잔액을 조회합니다.
         console.log(`지갑주소: ${publicKey}`); // 지갑 주소를 출력합니다.
-        if (!getToken) {
-            console.log(`토큰을 가져오는 데 실패했습니다.`); // 토큰을 가져오지 못한 경우 메시지를 출력합니다.
-            continue; // 다음 개인키로 넘어갑니다.
-        }.
+        const initialBalance = await connection.getBalance(keypair.publicKey); // 초기 잔액을 조회합니다.
         const progress = ((i + 1) / totalKeys * 100).toFixed(2); // 처리 진행 상태를 계산합니다.
         console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`); // 처리 상태를 출력합니다.
 
