@@ -6,7 +6,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}Sonic 데일리퀘스트 미션 스크립트를 시작합니다...${NC}"
+echo -e "${GREEN}세번째 Sonic 데일리퀘스트 미션 스크립트를 시작합니다...${NC}"
 
 # 작업 디렉토리 설정
 workDir="/root/sonic-checkin"
