@@ -206,9 +206,13 @@ const getLoginToken = async (keyPair) => {
 
 // 사용자 정보를 가져오는 함수
 const getUserInfo = async (auth) => {
-    try {
-        const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
-            headers: {
+    const maxRetries = 5; // 최대 재시도 횟수
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+        try {
+            const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
+                headers: {
                     'accept': '*/*',
                     'accept-language': 'en-US,en;q=0.7',
                     'content-type': 'application/json',
@@ -222,18 +226,23 @@ const getUserInfo = async (auth) => {
                     'sec-gpc': '1',
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
                     'authorization': `Bearer ${auth}` // 인증 헤더 추가
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`사용자 정보 가져오기 실패: ${response.status}`);
             }
-        });
 
-        if (!response.ok) {
-            throw new Error(`사용자 정보 가져오기 실패: ${response.status}`);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            attempt++;
+            console.error(`사용자 정보 가져오기 오류 (시도 ${attempt}/${maxRetries}):`, error);
+            if (attempt >= maxRetries) {
+                throw new Error('최대 재시도 횟수를 초과했습니다.');
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기 후 재시도
         }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('사용자 정보 가져오기 오류:', error);
-        throw error;
     }
 };
 
