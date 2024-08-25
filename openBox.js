@@ -23,23 +23,22 @@ const defaultHeaders = {
 const RETRY_DELAY_MS = 5000; // 지연 시간 설정 (5초)
 const MAX_RETRIES = 3; // 최대 재시도 횟수
 
-const sendTransaction = (transaction, keyPair) => new Promise(async (resolve) => {
+const sendTransaction = async (transaction, keyPair) => {
     try {
         transaction.partialSign(keyPair);
         const rawTransaction = transaction.serialize();
         const signature = await connection.sendRawTransaction(rawTransaction);
         await connection.confirmTransaction(signature);
-        resolve(signature);
+        return signature;
     } catch (error) {
-        resolve(error);
+        throw new Error(`트랜잭션 전송 오류: ${error.message}`);
     }
-});
+};
 
 export const openBox = async (keyPair, auth) => {
-    let success = false;
     let retries = 0; // 재시도 횟수
 
-    while (true) { // 무한 루프를 사용하여 계속 시도
+    while (retries <= MAX_RETRIES) {
         try {
             const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
@@ -60,10 +59,6 @@ export const openBox = async (keyPair, auth) => {
 
                 // 트랜잭션 전송 및 확인
                 const signature = await sendTransaction(transaction, keyPair);
-
-                if (signature instanceof Error) {
-                    throw new Error(`트랜잭션 전송 오류: ${signature.message}`);
-                }
 
                 // 미스터리 박스 개봉 요청
                 const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
@@ -95,4 +90,7 @@ export const openBox = async (keyPair, auth) => {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
         }
     }
+
+    // 이 시점에 도달한 경우, 모든 재시도가 실패했으므로 실패 메시지 반환
+    return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
 };
