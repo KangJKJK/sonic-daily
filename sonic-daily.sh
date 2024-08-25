@@ -245,7 +245,7 @@ const q = {
         // 로그인 토큰 가져오기
         const auth = await getLoginToken(keypair);
 
-        // CLAIM MILESTONES
+      // CLAIM MILESTONES
         twisters.put(`${publicKey}`, { 
             text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
@@ -253,12 +253,15 @@ Status       : Try to claim milestones...`
         });
 
         for (let i = 1; i <= 3; i++) {
-            const milestones = await dailyMilestone(auth, i);
+            const result = await dailyMilestone(auth, i);
             twisters.put(`${publicKey}`, { 
                 text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Status       : ${milestones}`
+Status       : ${result.message}`
             });
+            if (!result.success) {
+                break; // 실패 시 다음 단계로 넘어감
+            }
             await delay(5); // 요청 사이의 지연 시간 설정
         }
 
@@ -275,12 +278,15 @@ Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
             for (let i = 0; i < totalBox; i++) {
-                const openedBox = await openBox(keypair, auth);
+                const result = await openBox(keypair, auth);
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Status       : [${(i + 1)}/${totalBox}] You got ${openedBox}!`
+Status       : [${(i + 1)}/${totalBox}] You got ${result.message}!`
                 });
+                if (!result.success) {
+                    break; // 실패 시 다음 단계로 넘어감
+                }
                 await delay(5); // 요청 사이의 지연 시간 설정
             }
 
@@ -294,8 +300,8 @@ Status       : [${(i + 1)}/${totalBox}] You got ${openedBox}!`
 Address      : ${publicKey}
 Status       : ${msg}`
         });
-
-        await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 다음 개인키를 처리합니다.
+        
+        await new Promise(resolve => setTimeout(resolve, 3000)); // 3초 대기 후 다음 개인키를 처리합니다.
     }
 })();
 EOF
