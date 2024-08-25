@@ -301,7 +301,7 @@ Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
             for (let i = 0; i < totalBox; i++) {
-                const result = await openBox(keypair, auth); // openBox.js에서 가져온 openBox 함수 호출
+                const result = await openBox(keypair, auth); // openBox 함수 호출
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
