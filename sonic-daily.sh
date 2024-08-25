@@ -102,6 +102,7 @@ async function sendTransaction(transaction, keyPair) {
         await connection.confirmTransaction(signature);
         return signature;
     } catch (error) {
+        console.error("Transaction Error:", error);
         return error;
     }
 }
@@ -113,66 +114,31 @@ const twocaptcha_turnstile = async (sitekey, pageurl) => {
         const getToken = await fetch(`https://2captcha.com/in.php?key=${captchaKey}&method=turnstile&sitekey=${sitekey}&pageurl=${pageurl}&json=1`)
             .then(res => res.text())
             .then(res => {
-                if (res == 'ERROR_WRONG_USER_KEY' || res == 'ERROR_ZERO_BALANCE') {
+                if (res.startsWith('ERROR')) {
                     return res;
                 } else {
                     return res.split('|');
                 }
             });
 
-        if (getToken[0] != 'OK') {
+        if (getToken[0] !== 'OK') {
             return 'FAILED_GETTING_TOKEN';
         }
-    
+
         const task = getToken[1];
 
         for (let i = 0; i < 60; i++) {
             const token = await fetch(`https://2captcha.com/res.php?key=${captchaKey}&action=get&id=${task}&json=1`)
                 .then(res => res.json());
             
-            if (token.status == 1) {
+            if (token.status === 1) {
                 return token;
             }
             await delay(2);
         }
     } catch (error) {
+        console.error("2Captcha Error:", error);
         return 'FAILED_GETTING_TOKEN';
-    }
-};
-
-const claimFaucet = async (address) => {
-    let success = false;
-
-    while (!success) {
-        const bearer = await twocaptcha_turnstile('0x4AAAAAAAc6HG1RMG_8EHSC', 'https://faucet.sonic.game/#/');
-        if (bearer == 'ERROR_WRONG_USER_KEY' || bearer == 'ERROR_ZERO_BALANCE' || bearer == 'FAILED_GETTING_TOKEN') {
-            success = true;
-            return `클레임 실패, ${bearer}`;
-        }
-
-        try {
-            const res = await fetch(`https://faucet-api.sonic.game/airdrop/${address}/1/${bearer.request}`, {
-                headers: {
-                    "Accept": "application/json, text/plain, */*",
-                    "Content-Type": "application/json",
-                    "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
-                    "Dnt": "1",
-                    "Origin": "https://faucet.sonic.game",
-                    "Priority": "u=1, i",
-                    "Referer": "https://faucet.sonic.game/",
-                    "User-Agent": bearer.useragent,
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "Windows",
-                }
-            }).then(res => res.json());
-
-            if (res.status == 'ok') {
-                success = true;
-                return `성공적으로 1 SOL을 클레임했습니다!`;
-            }
-        } catch (error) {
-            // 오류 처리
-        }
     }
 };
 
@@ -202,81 +168,49 @@ const getLoginToken = async (keyPair) => {
             success = true;
             return token;
         } catch (e) {
-            // 오류 처리
+            console.error("Get Login Token Error:", e);
+            await delay(5); // 일정 시간 대기 후 재시도
         }
     }
 };
 
-const dailyMilestone = async (auth, stage) => {
+const dailyCheckin = async (keyPair, auth) => {
     let success = false;
     while (!success) {
         try {
-            await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
-                method: 'GET',
+            const data = await fetch('https://odyssey-api.sonic.game/user/check-in/transaction', {
                 headers: {
                     ...defaultHeaders,
-                    'authorization': `${auth}`
-                }
-            });
-
-            const data = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
-                method: 'POST',
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': `${auth}`
-                },
-                body: JSON.stringify({
-                    'stage': stage
-                })
-            }).then(res => res.json());
-
-            if (data.message == 'interact rewards already claimed') {
-                success = true;
-                return `마일스톤 ${stage} 이미 클레임했습니다!`;
-            }
-
-            if (data.data) {
-                success = true;
-                return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`
-            }
-        } catch (e) {
-            // 오류 처리
-        }
-    }
-};
-
-const openBox = async (keyPair, auth) => {
-    let success = false;
-    while (!success) {
-        try {
-            const data = await fetch(`https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx`, {
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': auth
+                    'authorization': `Bearer ${auth}`
                 }
             }).then(res => res.json());
+
+            if (data.message === 'current account already checked in') {
+                success = true;
+                return '오늘 이미 체크인 했습니다!';
+            }
 
             if (data.data) {
                 const transactionBuffer = Buffer.from(data.data.hash, "base64");
                 const transaction = Transaction.from(transactionBuffer);
-                transaction.partialSign(keyPair);
                 const signature = await sendTransaction(transaction, keyPair);
-                const open = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
+                const checkin = await fetch('https://odyssey-api.sonic.game/user/check-in', {
                     method: 'POST',
                     headers: {
                         ...defaultHeaders,
-                        'authorization': auth
+                        'authorization': `Bearer ${auth}`
                     },
                     body: JSON.stringify({
-                        'hash': signature
+                        'hash': `${signature}`
                     })
                 }).then(res => res.json());
 
                 success = true;
-                return `성공적으로 미스터리 박스를 열었습니다, ${open.data.reward}!`;
+                return `성공적으로 체크인 완료, ${checkin.data.accumulative_days}일차!`;
             }
         } catch (e) {
-            // 오류 처리
+            console.error("Daily Check-in Error:", e);
+            await delay(5); // 일정 시간 대기 후 재시도
         }
     }
 };
@@ -290,13 +224,21 @@ const openBox = async (keyPair, auth) => {
         const publicKey = keypair.publicKey.toBase58();
         const initialBalance = await connection.getBalance(keypair.publicKey);
         console.log(`지갑주소: ${publicKey}`);
+        console.log(`초기 잔액: ${initialBalance}`);
+
         const getToken = await getLoginToken(keypair);
+        if (!getToken) {
+            console.log(`토큰을 가져오는 데 실패했습니다.`);
+            continue;
+        }
+
         const getdaily = await dailyCheckin(keypair, getToken);
         console.log(getdaily);
+
         const progress = ((i + 1) / totalKeys * 100).toFixed(2);
         console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`);
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
     }
 })();
 EOF
