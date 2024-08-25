@@ -33,7 +33,7 @@ curl -o package-lock.json https://raw.githubusercontent.com/KangJKJK/sonic-check
 rm -f dailyMilestone.js
 curl -o dailyMilestone.js https://raw.githubusercontent.com/KangJKJK/sonic-daily/main/dailyMilestone.js
 rm -f openBox.js
-curl -o openBox.js https://raw.githubusercontent.com/KangJKJK/sonic-daily/main/openBox.js
+curl -L -o openBox.js -J https://raw.githubusercontent.com/KangJKJK/sonic-daily/main/openBox.js
 
 # npm 설치 여부 확인
 echo -e "${YELLOW}필요한 파일들을 설치합니다...${NC}"
