@@ -265,7 +265,7 @@ const openBox = async (keyPair, auth) => {
 // 사용자 정보 가져오는 함수
 const getUserInfo = async (auth) => {
     try {
-        const response = await fetch('https://odyssey-api.sonic.game/user/info', {
+        const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
             method: 'GET',
             headers: {
                 ...defaultHeaders,
