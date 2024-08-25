@@ -1,8 +1,8 @@
 import fetch from 'node-fetch';
 import { Transaction } from '@solana/web3.js';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 // Replace this with the actual connection setup
-import { Connection, clusterApiUrl } from '@solana/web3.js';
 const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'); // 예시, 실제 환경에 맞게 수정
 
 const defaultHeaders = {
@@ -21,6 +21,7 @@ const defaultHeaders = {
 };
 
 const RETRY_DELAY_MS = 5000; // 지연 시간 설정 (5초)
+const MAX_RETRIES = 3; // 최대 재시도 횟수
 
 const sendTransaction = (transaction, keyPair) => new Promise(async (resolve) => {
     try {
@@ -36,8 +37,9 @@ const sendTransaction = (transaction, keyPair) => new Promise(async (resolve) =>
 
 export const openBox = async (keyPair, auth) => {
     let success = false;
+    let retries = 0; // 재시도 횟수
 
-    while (!success) {
+    while (!success && retries <= MAX_RETRIES) {
         try {
             const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
@@ -81,6 +83,10 @@ export const openBox = async (keyPair, auth) => {
             }
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
+            retries++;
+            if (retries > MAX_RETRIES) {
+                return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
+            }
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS)); // 지연 시간 후 재시도
         }
     }
