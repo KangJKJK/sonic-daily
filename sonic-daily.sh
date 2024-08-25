@@ -87,7 +87,7 @@ import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
 
-// Named import로 수정
+// Named import 사용
 import { dailyMilestone } from './dailyMilestone.js';
 import { openBox } from './openBox.js';
 
