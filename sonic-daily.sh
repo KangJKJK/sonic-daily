@@ -262,29 +262,6 @@ const openBox = async (keyPair, auth) => {
     }
 };
 
-// 사용자 정보 가져오는 함수
-const getUserInfo = async (auth) => {
-    try {
-        const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
-            method: 'GET',
-            headers: {
-                ...defaultHeaders,
-                'authorization': auth
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('사용자 정보 가져오기 오류:', error);
-        throw error;
-    }
-};
-
 // 결과 기록을 위한 상태 객체
 const twisters = {
     put: (key, value) => {
@@ -312,16 +289,10 @@ const q = {
         // 로그인 토큰 가져오기
         const auth = await getLoginToken(keypair);
 
-        // 계정 정보 가져오기
-        let info = await getUserInfo(auth);
-        const initialInfo = { ...info };
-
         // CLAIM MILESTONES
         twisters.put(`${publicKey}`, { 
             text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : Try to claim milestones...`
         });
 
@@ -330,52 +301,43 @@ Status       : Try to claim milestones...`
             twisters.put(`${publicKey}`, { 
                 text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : ${milestones}`
             });
             await delay(5); // 요청 사이의 지연 시간 설정
         }
 
-        info = await getUserInfo(auth);
-        let msg = `Earned ${(info.ring_monitor - initialInfo.ring_monitor)} Mystery Box\nYou have ${info.ring} Points and ${info.ring_monitor} Mystery Box now.`;
+        // 결과 기록
+        let msg = '작업 완료';
 
         if (q.openBox) {
+            const info = await getUserInfo(auth);
             const totalBox = info.ring_monitor;
             twisters.put(`${publicKey}`, { 
                 text: `=== ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : Preparing to open ${totalBox} Mystery Box...`
             });
 
             for (let i = 0; i < totalBox; i++) {
                 const openedBox = await openBox(keypair, auth);
-                info = await getUserInfo(auth);
                 twisters.put(`${publicKey}`, { 
                     text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : [${(i + 1)}/${totalBox}] You got ${openedBox}!`
                 });
                 await delay(5); // 요청 사이의 지연 시간 설정
             }
 
-            info = await getUserInfo(auth);
-            msg = `Earned ${(info.ring - initialInfo.ring)} Points\nYou have ${info.ring} Points and ${info.ring_monitor} Mystery Box now.`;
+            msg = `Earned Points\nYou have Mystery Box now.`;
         }
 
-        // 결과 기록
-        twisters.put(`${publicKey}`, { 
-            active: false,
-            text: ` === ACCOUNT ${(index + 1)} ===
+// 결과 기록
+twisters.put(`${publicKey}`, { 
+    active: false,
+    text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
-Points       : ${info.ring}
-Mystery Box  : ${info.ring_monitor}
 Status       : ${msg}`
-        });
+});
 
         await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 다음 개인키를 처리합니다.
     }
