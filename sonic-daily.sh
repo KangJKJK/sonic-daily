@@ -115,45 +115,6 @@ async function sendTransaction(transaction, keyPair) {
 // 지연을 위한 함수 (초 단위)
 const delay = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
-// 지갑 주소에 SOL을 클레임하는 함수
-const claimFaucet = async (address) => {
-    let success = false;
-
-    while (!success) {
-        // 캡차 해결 후, 클레임 요청을 보냅니다.
-        const bearer = await twocaptcha_turnstile('0x4AAAAAAAc6HG1RMG_8EHSC', 'https://faucet.sonic.game/#/');
-        if (bearer == 'ERROR_WRONG_USER_KEY' || bearer == 'ERROR_ZERO_BALANCE' || bearer == 'FAILED_GETTING_TOKEN') {
-            success = true;
-            return `클레임 실패, ${bearer}`;
-        }
-
-        try {
-            const res = await fetch(`https://faucet-api.sonic.game/airdrop/${address}/1/${bearer.request}`, {
-                headers: {
-                    "Accept": "application/json, text/plain, */*",
-                    "Content-Type": "application/json",
-                    "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
-                    "Dnt": "1",
-                    "Origin": "https://faucet.sonic.game",
-                    "Priority": "u=1, i",
-                    "Referer": "https://faucet.sonic.game/",
-                    "User-Agent": bearer.useragent,
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "Windows",
-                }
-            }).then(res => res.json());
-
-            if (res.status == 'ok') {
-                // 클레임이 성공하면 성공 메시지를 반환합니다.
-                success = true;
-                return `성공적으로 1 SOL을 클레임했습니다!`;
-            }
-        } catch (error) {
-            // 오류 발생 시 재시도합니다.
-        }
-    }
-};
-
 // 로그인 토큰을 가져오는 함수
 const getLoginToken = async (keyPair) => {
     let success = false;
