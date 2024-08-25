@@ -66,10 +66,12 @@ cat << 'EOF' > sonic-daily.mjs
 // sonic-daily.mjs
 import path from 'path';
 import fs from 'fs';
-import { Connection, Keypair, Transaction } from '@solana/web3.js';
+import { Connection, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
+import { dailyMilestone } from './dailyMilestone.js';
+import { openBox } from './openBox.js';
 
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
@@ -179,101 +181,23 @@ const getLoginToken = async (keyPair) => {
             return token;
         } catch (e) {
             console.error('로그인 토큰 오류:', e);
-            // 오류 발생 시 재시도합니다.
             await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 지연 후 재시도
         }
     }
 };
 
-// 일일 마일스톤 보상을 클레임하는 함수
-const dailyMilestone = async (auth, stage) => {
-    let success = false;
-    while (!success) {
-        try {
-            await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
-                method: 'GET',
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': auth
-                }
-            });
-
-            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
-                method: 'POST',
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': auth
-                },
-                body: JSON.stringify({ 'stage': stage })
-            });
-
-            // 응답 상태 확인
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+// 미스터리 박스 개봉 및 보상 확인 함수
+const getUserInfo = async (auth) => {
+    try {
+        const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
+            headers: {
+                ...defaultHeaders,
+                'authorization': auth
             }
-
-            // 응답의 텍스트를 가져옵니다.
-            const text = await response.text();
-
-            // 응답이 JSON인지 확인합니다.
-            try {
-                const data = JSON.parse(text);
-
-                if (data.message === 'interact rewards already claimed') {
-                    success = true;
-                    return `마일스톤 ${stage} 이미 클레임했습니다!`;
-                }
-
-                if (data.data) {
-                    success = true;
-                    console.log(`일일 마일스톤 보상 클레임 성공: ${data.data.transactionHash}`);
-                    return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
-                }
-            } catch (e) {
-                throw new Error('응답이 JSON 형식이 아닙니다.');
-            }
-        } catch (e) {
-            console.error('일일 마일스톤 클레임 오류:', e.message);
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
-        }
-    }
-};
-
-// 미스터리 박스를 열고 보상을 확인하는 함수
-const openBox = async (keyPair, auth) => {
-    let success = false;
-    while (!success) {
-        try {
-            const data = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': auth
-                }
-            }).then(res => res.json());
-
-            if (data.data) {
-                const transactionBuffer = Buffer.from(data.data.hash, "base64");
-                const transaction = Transaction.from(transactionBuffer);
-                transaction.partialSign(keyPair);
-                const signature = await sendTransaction(transaction, keyPair);
-
-                const open = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
-                    method: 'POST',
-                    headers: {
-                        ...defaultHeaders,
-                        'authorization': auth
-                    },
-                    body: JSON.stringify({ 'hash': signature })
-                }).then(res => res.json());
-
-                success = true;
-                console.log(`미스터리 박스 개봉 트랜잭션 해시: ${signature}`);
-                return `성공적으로 미스터리 박스를 열었습니다, ${open.data.reward}!`;
-            }
-        } catch (e) {
-            console.error('미스터리 박스 개봉 오류:', e);
-            // 오류 발생 시 재시도합니다.
-        }
+        });
+        return response.json();
+    } catch (e) {
+        console.error('사용자 정보 가져오기 오류:', e);
     }
 };
 
@@ -281,7 +205,6 @@ const openBox = async (keyPair, auth) => {
 const twisters = {
     put: (key, value) => {
         console.log(`기록 - ${key}:`, value);
-        // 실제 구현에서는 파일이나 데이터베이스에 저장할 수 있음
     }
 };
 
@@ -346,13 +269,13 @@ Status       : [${(i + 1)}/${totalBox}] You got ${openedBox}!`
             msg = `Earned Points\nYou have Mystery Box now.`;
         }
 
-// 결과 기록
-twisters.put(`${publicKey}`, { 
-    active: false,
-    text: ` === ACCOUNT ${(index + 1)} ===
+        // 결과 기록
+        twisters.put(`${publicKey}`, { 
+            active: false,
+            text: ` === ACCOUNT ${(index + 1)} ===
 Address      : ${publicKey}
 Status       : ${msg}`
-});
+        });
 
         await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 다음 개인키를 처리합니다.
     }
