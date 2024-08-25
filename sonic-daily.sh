@@ -74,41 +74,45 @@ import fetch from 'node-fetch';
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
 if (!fs.existsSync(workDir2)) {
-    // 작업 디렉토리가 존재하지 않으면 새로 생성합니다.
     fs.mkdirSync(workDir2, { recursive: true });
 }
-process.chdir(workDir2); // 현재 작업 디렉토리를 설정한 디렉토리로 변경합니다.
+process.chdir(workDir2);
 
 // 개인키 목록 읽기
 const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
-    .split(",") // 개인키 목록을 쉼표로 분리하여 배열로 변환합니다.
-    .map(a => a.trim()); // 각 항목의 앞뒤 공백을 제거합니다.
+    .split(",")
+    .map(a => a.trim());
 
 if (listAccounts.length === 0) {
-    // 개인키가 하나도 없으면 오류를 발생시킵니다.
     throw new Error('sonicprivate.txt에 개인키를 하나 이상 입력해주세요.');
 }
 
 // Solana 네트워크에 연결 설정
 const connection = new Connection('https://devnet.sonic.game/', 'confirmed');
 
+// 기본 헤더 설정
+const defaultHeaders = {
+    'accept': '*/*',
+    'accept-language': 'en-US,en;q=0.7',
+    'content-type': 'application/json',
+};
+
 // 개인키로부터 Keypair 객체를 생성하는 함수
 function getKeypairFromPrivateKey(privateKey) {
-    const decoded = bs58.decode(privateKey); // 개인키를 base58로 디코딩합니다.
-    return Keypair.fromSecretKey(decoded); // 디코딩된 키를 사용하여 Keypair 객체를 생성합니다.
+    const decoded = bs58.decode(privateKey);
+    return Keypair.fromSecretKey(decoded);
 }
 
 // 거래를 보내는 함수
 async function sendTransaction(transaction, keyPair) {
     try {
-        transaction.partialSign(keyPair); // 거래에 서명을 추가합니다.
-        const rawTransaction = transaction.serialize(); // 거래를 직렬화하여 원시 거래 데이터를 생성합니다.
-        const signature = await connection.sendRawTransaction(rawTransaction); // 원시 거래 데이터를 네트워크에 전송하고 서명을 받습니다.
-        await connection.confirmTransaction(signature); // 거래가 확정될 때까지 기다립니다.
-        console.log(`트랜잭션 해시: ${signature}`); // 트랜잭션 해시를 출력합니다.
-        return signature; // 거래의 서명을 반환합니다.
+        transaction.partialSign(keyPair);
+        const rawTransaction = transaction.serialize();
+        const signature = await connection.sendRawTransaction(rawTransaction);
+        await connection.confirmTransaction(signature);
+        console.log(`트랜잭션 해시: ${signature}`);
+        return signature;
     } catch (error) {
-        // 오류 발생 시 오류를 반환합니다.
         console.error('트랜잭션 전송 오류:', error);
         return error;
     }
@@ -117,42 +121,69 @@ async function sendTransaction(transaction, keyPair) {
 // 지연을 위한 함수 (초 단위)
 const delay = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
+// 로그인 토큰을 가져오는 함수
+const getLoginToken = async (keyPair) => {
+    let success = false;
+    while (!success) {
+        try {
+            const message = await fetch(`https://odyssey-api.sonic.game/auth/sonic/challenge?wallet=${keyPair.publicKey}`, {
+                headers: defaultHeaders
+            }).then(res => res.json());
+
+            const sign = nacl.sign.detached(Buffer.from(message.data), keyPair.secretKey);
+            const signature = Buffer.from(sign).toString('base64');
+            const publicKey = keyPair.publicKey.toBase58();
+            const addressEncoded = Buffer.from(keyPair.publicKey.toBytes()).toString("base64");
+            const authorize = await fetch('https://odyssey-api.sonic.game/auth/sonic/authorize', {
+                method: 'POST',
+                headers: defaultHeaders,
+                body: JSON.stringify({
+                    'address': publicKey,
+                    'address_encoded': addressEncoded,
+                    'signature': signature
+                })
+            }).then(res => res.json());
+
+            const token = authorize.data.token;
+            success = true;
+            return token;
+        } catch (e) {
+            console.error('로그인 토큰 오류:', e);
+            // 오류 발생 시 재시도합니다.
+        }
+    }
+};
+
 // 일일 마일스톤 보상을 클레임하는 함수
 const dailyMilestone = async (auth, stage) => {
     let success = false;
     while (!success) {
         try {
-            // 현재 일일 상태를 요청합니다.
             await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
                     ...defaultHeaders,
-                    'authorization': `${auth}`
+                    'authorization': auth
                 }
             });
 
-            // 마일스톤 보상을 클레임합니다.
             const data = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
                 method: 'POST',
                 headers: {
                     ...defaultHeaders,
-                    'authorization': `${auth}`
+                    'authorization': auth
                 },
-                body: JSON.stringify({
-                    'stage': stage
-                })
+                body: JSON.stringify({ 'stage': stage })
             }).then(res => res.json());
 
             if (data.message === 'interact rewards already claimed') {
-                // 이미 클레임한 경우 메시지를 반환합니다.
                 success = true;
                 return `마일스톤 ${stage} 이미 클레임했습니다!`;
             }
 
             if (data.data) {
-                // 마일스톤 보상이 성공적으로 클레임되면 메시지를 반환합니다.
                 success = true;
-                console.log(`일일 마일스톤 보상 클레임 성공: ${data.data.transactionHash}`); // 트랜잭션 해시를 출력합니다.
+                console.log(`일일 마일스톤 보상 클레임 성공: ${data.data.transactionHash}`);
                 return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
             }
         } catch (e) {
@@ -167,7 +198,6 @@ const openBox = async (keyPair, auth) => {
     let success = false;
     while (!success) {
         try {
-            // 미스터리 박스 거래를 요청합니다.
             const data = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
                     ...defaultHeaders,
@@ -176,10 +206,10 @@ const openBox = async (keyPair, auth) => {
             }).then(res => res.json());
 
             if (data.data) {
-                const transactionBuffer = Buffer.from(data.data.hash, "base64"); // 거래 해시를 base64로 디코딩합니다.
-                const transaction = Transaction.from(transactionBuffer); // 거래 객체를 생성합니다.
-                transaction.partialSign(keyPair); // 거래에 서명을 추가합니다.
-                const signature = await sendTransaction(transaction, keyPair); // 거래를 네트워크에 전송하고 서명을 받습니다.
+                const transactionBuffer = Buffer.from(data.data.hash, "base64");
+                const transaction = Transaction.from(transactionBuffer);
+                transaction.partialSign(keyPair);
+                const signature = await sendTransaction(transaction, keyPair);
 
                 const open = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
                     method: 'POST',
@@ -187,14 +217,11 @@ const openBox = async (keyPair, auth) => {
                         ...defaultHeaders,
                         'authorization': auth
                     },
-                    body: JSON.stringify({
-                        'hash': signature
-                    })
+                    body: JSON.stringify({ 'hash': signature })
                 }).then(res => res.json());
 
-                // 미스터리 박스를 성공적으로 열면 보상 메시지를 반환합니다.
                 success = true;
-                console.log(`미스터리 박스 개봉 트랜잭션 해시: ${signature}`); // 트랜잭션 해시를 출력합니다.
+                console.log(`미스터리 박스 개봉 트랜잭션 해시: ${signature}`);
                 return `성공적으로 미스터리 박스를 열었습니다, ${open.data.reward}!`;
             }
         } catch (e) {
@@ -204,25 +231,117 @@ const openBox = async (keyPair, auth) => {
     }
 };
 
-// 개인키 처리
-(async () => {
-    const totalKeys = listAccounts.length; // 총 개인키 수를 계산합니다.
-    for (let i = 0; i < totalKeys; i++) {
-        const privateKey = listAccounts[i]; // 현재 개인키를 가져옵니다.
-        const keypair = getKeypairFromPrivateKey(privateKey); // 개인키로 Keypair 객체를 생성합니다.
-        const publicKey = keypair.publicKey.toBase58(); // 공개키를 base58로 변환합니다.
-        console.log(`지갑 주소: ${publicKey}`); // 지갑 주소를 출력합니다.
-        const progress = ((i + 1) / totalKeys * 100).toFixed(2); // 처리 진행 상태를 계산합니다.
-        console.log(`처리 진행 상태: ${progress}% (${i + 1}/${totalKeys})`); // 처리 상태를 출력합니다.
+// 사용자 정보 가져오는 함수
+const getUserInfo = async (auth) => {
+    try {
+        const response = await fetch('https://odyssey-api.sonic.game/user/info', {
+            method: 'GET',
+            headers: {
+                ...defaultHeaders,
+                'authorization': auth
+            }
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('사용자 정보 가져오기 오류:', error);
+        throw error;
+    }
+};
 
-        //일일 마일스톤 보상을 클레임합니다. (stage는 실제 단계로 대체해야 합니다.)
-        const milestoneResult = await dailyMilestone(auth, 1); // 예시로 stage 1을 사용합니다.
-        console.log(milestoneResult);
-        // 미스터리 박스를 엽니다.
-        const boxResult = await openBox(keypair, auth);
-        console.log(boxResult);
-        
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기 후 다음 개인키를 처리합니다.
+// 결과 기록을 위한 상태 객체
+const twisters = {
+    put: (key, value) => {
+        console.log(`기록 - ${key}:`, value);
+        // 실제 구현에서는 파일이나 데이터베이스에 저장할 수 있음
+    }
+};
+
+// 옵션 객체
+const q = {
+    openBox: true // 미스터리 박스를 열지 여부 설정
+};
+
+// 개인키 처리 및 결과 기록
+(async () => {
+    const totalKeys = listAccounts.length;
+    for (let index = 0; index < totalKeys; index++) {
+        const privateKey = listAccounts[index];
+        const keypair = getKeypairFromPrivateKey(privateKey);
+        const publicKey = keypair.publicKey.toBase58();
+        console.log(`지갑 주소: ${publicKey}`);
+        const progress = ((index + 1) / totalKeys * 100).toFixed(2);
+        console.log(`처리 진행 상태: ${progress}% (${index + 1}/${totalKeys})`);
+
+        // 로그인 토큰 가져오기
+        const auth = await getLoginToken(keypair);
+
+        // 계정 정보 가져오기
+        let info = await getUserInfo(auth);
+        const initialInfo = { ...info };
+
+        // CLAIM MILESTONES
+        twisters.put(`${publicKey}`, { 
+            text: ` === ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
+Status       : Try to claim milestones...`
+        });
+
+        for (let i = 1; i <= 3; i++) {
+            const milestones = await dailyMilestone(auth, i);
+            twisters.put(`${publicKey}`, { 
+                text: ` === ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
+Status       : ${milestones}`
+            });
+            await delay(5); // 요청 사이의 지연 시간 설정
+        }
+
+        info = await getUserInfo(auth);
+        let msg = `Earned ${(info.ring_monitor - initialInfo.ring_monitor)} Mystery Box\nYou have ${info.ring} Points and ${info.ring_monitor} Mystery Box now.`;
+
+        if (q.openBox) {
+            const totalBox = info.ring_monitor;
+            twisters.put(`${publicKey}`, { 
+                text: `=== ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
+Status       : Preparing to open ${totalBox} Mystery Box...`
+            });
+
+            for (let i = 0; i < totalBox; i++) {
+                const openedBox = await openBox(keypair, auth);
+                info = await getUserInfo(auth);
+                twisters.put(`${publicKey}`, { 
+                    text: ` === ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
+Status       : [${(i + 1)}/${totalBox}] You got ${openedBox}!`
+                });
+                await delay(5); // 요청 사이의 지연 시간 설정
+            }
+
+            info = await getUserInfo(auth);
+            msg = `Earned ${(info.ring - initialInfo.ring)} Points\nYou have ${info.ring} Points and ${info.ring_monitor} Mystery Box now.`;
+        }
+
+        // 결과 기록
+        twisters.put(`${publicKey}`, { 
+            active: false,
+            text: ` === ACCOUNT ${(index + 1)} ===
+Address      : ${publicKey}
+Points       : ${info.ring}
+Mystery Box  : ${info.ring_monitor}
+Status       : ${msg}`
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 다음 개인키를 처리합니다.
     }
 })();
 EOF
