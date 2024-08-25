@@ -1,3 +1,4 @@
+// dailyMilestone.js
 import fetch from 'node-fetch';
 
 const defaultHeaders = {
@@ -23,7 +24,7 @@ export const dailyMilestone = async (auth, stage) => {
 
     while (!success && retries < MAX_RETRIES) {
         try {
-            const stateResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
+            const response = await fetch('https://odyssey-api.sonic.game/user/transactions/state/daily', {
                 method: 'GET',
                 headers: {
                     ...defaultHeaders,
@@ -31,10 +32,8 @@ export const dailyMilestone = async (auth, stage) => {
                 }
             });
 
-            if (!stateResponse.ok) {
-                const responseBody = await stateResponse.text();
-                console.error(`State request failed! status: ${stateResponse.status}, body: ${responseBody}`);
-                throw new Error(`HTTP error! status: ${stateResponse.status}`);
+            if (!response.ok) {
+                throw new Error(`error! status: ${response.status}`);
             }
 
             const claimResponse = await fetch('https://odyssey-api.sonic.game/user/transactions/rewards/claim', {
@@ -47,8 +46,6 @@ export const dailyMilestone = async (auth, stage) => {
             });
 
             if (!claimResponse.ok) {
-                const claimResponseBody = await claimResponse.text();
-                console.error(`Claim request failed! status: ${claimResponse.status}, body: ${claimResponseBody}`);
                 throw new Error(`HTTP error! status: ${claimResponse.status}`);
             }
 
@@ -64,20 +61,16 @@ export const dailyMilestone = async (auth, stage) => {
                     return `성공적으로 마일스톤 ${stage} 보상을 클레임했습니다.`;
                 }
             } catch (e) {
-                console.error('응답이 JSON 형식이 아닙니다:', text);
                 throw new Error('응답이 JSON 형식이 아닙니다.');
             }
         } catch (e) {
             console.error('일일 마일스톤 클레임 오류:', e.message);
-            retries += 1; // 재시도 횟수 증가
+            retries++;
             if (retries >= MAX_RETRIES) {
-                return '최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.';
+                console.log('최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.');
+                return `일일 마일스톤 클레임 실패: ${e.message}`;
             }
             await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
         }
-    }
-
-    if (!success) {
-        return '일일 마일스톤 클레임 실패. 다음 단계로 넘어갑니다.';
     }
 };
