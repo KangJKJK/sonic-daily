@@ -115,46 +115,6 @@ async function sendTransaction(transaction, keyPair) {
 // 지연을 위한 함수 (초 단위)
 const delay = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
-// 2Captcha Turnstile 캡차를 해결하는 함수
-const twocaptcha_turnstile = async (sitekey, pageurl) => {
-    try {
-        // 캡차 해결 요청을 보냅니다.
-        const getToken = await fetch(`https://2captcha.com/in.php?key=${captchaKey}&method=turnstile&sitekey=${sitekey}&pageurl=${pageurl}&json=1`)
-            .then(res => res.text())
-            .then(res => {
-                if (res == 'ERROR_WRONG_USER_KEY' || res == 'ERROR_ZERO_BALANCE') {
-                    // 사용자 키 오류 또는 잔액 부족 오류 처리
-                    return res;
-                } else {
-                    // 응답을 파싱하여 결과를 배열로 반환합니다.
-                    return res.split('|');
-                }
-            });
-
-        if (getToken[0] != 'OK') {
-            // 결과가 OK가 아니면 실패로 간주합니다.
-            return 'FAILED_GETTING_TOKEN';
-        }
-    
-        const task = getToken[1]; // 작업 ID를 추출합니다.
-
-        // 최대 60초 동안 토큰을 확인합니다.
-        for (let i = 0; i < 60; i++) {
-            const token = await fetch(`https://2captcha.com/res.php?key=${captchaKey}&action=get&id=${task}&json=1`)
-                .then(res => res.json());
-            
-            if (token.status == 1) {
-                // 토큰이 성공적으로 생성되었으면 반환합니다.
-                return token;
-            }
-            await delay(2); // 2초 대기 후 재시도합니다.
-        }
-    } catch (error) {
-        // 오류 발생 시 실패 메시지를 반환합니다.
-        return 'FAILED_GETTING_TOKEN';
-    }
-};
-
 // 지갑 주소에 SOL을 클레임하는 함수
 const claimFaucet = async (address) => {
     let success = false;
@@ -318,8 +278,6 @@ const openBox = async (keyPair, auth) => {
         const publicKey = keypair.publicKey.toBase58(); // 공개키를 base58로 변환합니다.
         const initialBalance = await connection.getBalance(keypair.publicKey); // 초기 잔액을 조회합니다.
         console.log(`지갑주소: ${publicKey}`); // 지갑 주소를 출력합니다.
-        console.log(`초기 잔액: ${initialBalance}`); // 초기 잔액을 출력합니다.
-
         const getToken = await getLoginToken(keypair); // 로그인 토큰을 가져옵니다.
         if (!getToken) {
             console.log(`토큰을 가져오는 데 실패했습니다.`); // 토큰을 가져오지 못한 경우 메시지를 출력합니다.
