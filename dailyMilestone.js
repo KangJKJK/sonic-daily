@@ -45,7 +45,7 @@ export const dailyMilestone = async (auth, stage) => {
             });
 
             if (!claimResponse.ok) {
-                throw new Error(`HTTP error! status: ${claimResponse.status}`);
+                throw new Error(`에러가 발생했습니다. status: ${claimResponse.status}`);
             }
 
             const text = await claimResponse.text();
