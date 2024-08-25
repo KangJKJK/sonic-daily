@@ -62,11 +62,9 @@ fi
 
 # Node.js 스크립트 작성 (sonic-checkin.mjs)
 echo -e "${YELLOW}Node.js 스크립트를 작성하고 있습니다...${NC}"
-cat << 'EOF' > sonic-daily.mjs
 import path from 'path';
 import fs from 'fs';
-import { Twisters } from 'twisters';
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, Keypair, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
