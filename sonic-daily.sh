@@ -239,7 +239,6 @@ const openBox = async (keyPair, auth) => {
         const publicKey = keypair.publicKey.toBase58(); // 공개키를 base58로 변환합니다.
         const initialBalance = await connection.getBalance(keypair.publicKey); // 초기 잔액을 조회합니다.
         console.log(`지갑주소: ${publicKey}`); // 지갑 주소를 출력합니다.
-        const getToken = await getLoginToken(keypair); // 로그인 토큰을 가져옵니다.
         if (!getToken) {
             console.log(`토큰을 가져오는 데 실패했습니다.`); // 토큰을 가져오지 못한 경우 메시지를 출력합니다.
             continue; // 다음 개인키로 넘어갑니다.
