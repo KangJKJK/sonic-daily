@@ -205,6 +205,71 @@ const getLoginToken = async (keyPair) => {
 };
 
 // 미스터리 박스 개봉 및 보상 확인 함수
+const openBox = async (keyPair, auth) => {
+    const MAX_RETRIES = 5; // 최대 재시도 횟수
+    let retries = 0; // 현재 재시도 횟수
+
+    while (retries < MAX_RETRIES) {
+        try {
+            // 미스터리 박스 거래를 구축
+            const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
+                headers: {
+                    ...defaultHeaders,
+                    'authorization': auth
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Build transaction 실패: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.data) {
+                // 트랜잭션을 생성하고 서명
+                const transactionBuffer = Buffer.from(data.data.hash, 'base64');
+                const transaction = sol.Transaction.from(transactionBuffer);
+                transaction.partialSign(keyPair);
+
+                // 트랜잭션 전송
+                const signature = await sendTransaction(transaction, keyPair);
+
+                // 미스터리 박스 개봉 요청
+                const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
+                    method: 'POST',
+                    headers: {
+                        ...defaultHeaders,
+                        'authorization': auth
+                    },
+                    body: JSON.stringify({
+                        'hash': signature
+                    })
+                });
+
+                if (!openResponse.ok) {
+                    throw new Error(`미스터리 박스 개봉 실패: ${openResponse.status}`);
+                }
+
+                const openData = await openResponse.json();
+
+                if (openData.data) {
+                    return { success: true, amount: openData.data.amount };
+                } else {
+                    throw new Error('미스터리 박스 개봉 데이터 오류');
+                }
+            } else {
+                throw new Error('미스터리 박스 거래 데이터 오류');
+            }
+        } catch (error) {
+            console.error(`미스터리 박스 개봉 오류 (${retries + 1}/${MAX_RETRIES}): ${error.message}`);
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 대기 후 재시도
+        }
+    }
+
+    return { success: false, message: '최대 재시도 횟수를 초과했습니다.' };
+};
+
 const getUserInfo = async (auth) => {
     try {
         const response = await fetch('https://odyssey-api.sonic.game/user/rewards/info', {
