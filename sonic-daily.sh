@@ -91,6 +91,10 @@ import fetch from 'node-fetch';
 import { dailyMilestone } from './dailyMilestone.js';
 import { openBox } from './openBox.js'; // openBox.js에서 openBox 함수 가져오기
 
+// 상수 정의
+const RETRY_DELAY_MS = 5000; // 지연 시간 설정 (5초)
+const MAX_RETRIES = 3; // 최대 재시도 횟수
+
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
 if (!fs.existsSync(workDir2)) {
