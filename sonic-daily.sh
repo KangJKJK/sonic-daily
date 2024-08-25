@@ -78,20 +78,6 @@ if (!fs.existsSync(workDir2)) {
 }
 process.chdir(workDir2);
 
-// 변수 정의
-const captchaKey = 'YOUR_2CAPTCHA_KEY'; // 실제 2Captcha 키로 대체 필요
-const defaultHeaders = {
-    "Accept": "application/json, text/plain, */*",
-    "Content-Type": "application/json",
-    "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
-    "Dnt": "1",
-    "Origin": "https://faucet.sonic.game",
-    "Priority": "u=1, i",
-    "Referer": "https://faucet.sonic.game/",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "Windows",
-};
-
 // 개인키 목록 읽기
 const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
     .split(",")
@@ -221,46 +207,6 @@ const getLoginToken = async (keyPair) => {
     }
 };
 
-const dailyCheckin = async (keyPair, auth) => {
-    let success = false;
-    while (!success) {
-        try {
-            const data = await fetch(`https://odyssey-api.sonic.game/user/check-in/transaction`, {
-                headers: {
-                    ...defaultHeaders,
-                    'authorization': `${auth}`
-                }
-            }).then(res => res.json());
-
-            if (data.message == 'current account already checked in') {
-                success = true;
-                return '오늘 이미 체크인 했습니다!';
-            }
-
-            if (data.data) {
-                const transactionBuffer = Buffer.from(data.data.hash, "base64");
-                const transaction = Transaction.from(transactionBuffer);
-                const signature = await sendTransaction(transaction, keyPair);
-                const checkin = await fetch('https://odyssey-api.sonic.game/user/check-in', {
-                    method: 'POST',
-                    headers: {
-                        ...defaultHeaders,
-                        'authorization': `${auth}`
-                    },
-                    body: JSON.stringify({
-                        'hash': `${signature}`
-                    })
-                }).then(res => res.json());
-
-                success = true;
-                return `성공적으로 체크인 완료, ${checkin.data.accumulative_days}일차!`;
-            }
-        } catch (e) {
-            // 오류 처리
-        }
-    }
-};
-
 const dailyMilestone = async (auth, stage) => {
     let success = false;
     while (!success) {
@@ -344,7 +290,6 @@ const openBox = async (keyPair, auth) => {
         const publicKey = keypair.publicKey.toBase58();
         const initialBalance = await connection.getBalance(keypair.publicKey);
         console.log(`공식키: ${publicKey}`);
-        console.log(`초기 잔액: ${initialBalance}`);
         const getToken = await getLoginToken(keypair);
         const getdaily = await dailyCheckin(keypair, getToken);
         console.log(getdaily);
