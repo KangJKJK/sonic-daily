@@ -86,10 +86,26 @@ import { Connection, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
-import dailyMilestonePkg from './dailyMilestone.js';
-const { dailyMilestone } = dailyMilestonePkg;
-import openBoxPkg from './openBox.js';
-const { openBox } = openBoxPkg;
+
+// Named import로 수정
+import { dailyMilestone } from './dailyMilestone.js';
+import { openBox } from './openBox.js';
+
+// 작업 디렉토리 설정
+const workDir2 = '/root/sonic-daily';
+if (!fs.existsSync(workDir2)) {
+    fs.mkdirSync(workDir2, { recursive: true });
+}
+process.chdir(workDir2);
+
+// 개인키 목록 읽기
+const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
+    .split(",")
+    .map(a => a.trim());
+
+if (listAccounts.length === 0) {
+    throw new
+
 
 // 작업 디렉토리 설정
 const workDir2 = '/root/sonic-daily';
