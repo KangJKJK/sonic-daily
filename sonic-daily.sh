@@ -9,18 +9,18 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}세번째 Sonic 데일리퀘스트 미션 스크립트를 시작합니다...${NC}"
 
 # 작업 디렉토리 설정
-workDir="/root/sonic-checkin"
+workDir2="/root/sonic-checkin"
 
 # 기존 작업 디렉토리가 존재하면 삭제
-if [ -d "$workDir" ]; then
-    echo -e "${YELLOW}작업 디렉토리 '${workDir}'가 이미 존재하므로 삭제합니다.${NC}"
-    rm -rf "$workDir"
+if [ -d "$workDir2" ]; then
+    echo -e "${YELLOW}작업 디렉토리 '${workDir2}'가 이미 존재하므로 삭제합니다.${NC}"
+    rm -rf "$workDir2"
 fi
 
 # 작업 디렉토리 새로 생성
-echo -e "${YELLOW}새로운 작업 디렉토리 '${workDir}'를 생성합니다.${NC}"
-mkdir -p "$workDir"
-cd "$workDir"
+echo -e "${YELLOW}새로운 작업 디렉토리 '${workDir2}'를 생성합니다.${NC}"
+mkdir -p "$workDir2"
+cd "$workDir2"
 
 # 파일 다운로드 및 덮어쓰기
 echo -e "${YELLOW}필요한 파일들을 다운로드합니다...${NC}"
@@ -44,12 +44,11 @@ fi
 
 # Node.js 모듈 설치
 echo -e "${YELLOW}필요한 Node.js 모듈을 설치합니다...${NC}"
-npm install
 npm install @solana/web3.js chalk bs58
 
-# Node.js 스크립트 작성 (sonic-checkin.mjs)
+# Node.js 스크립트 작성 (sonic-daily.mjs)
 echo -e "${YELLOW}Node.js 스크립트를 작성하고 있습니다...${NC}"
-cat << 'EOF' > sonic-checkin.mjs
+cat << 'EOF' > sonic-daily.mjs
 import fs from 'fs';
 import path from 'path';
 import prompts from 'prompts';
@@ -59,11 +58,11 @@ import nacl from 'tweetnacl';
 import fetch from 'node-fetch';
 
 // 작업 디렉토리 설정
-const workDir = '/root/sonic-checkin';
-if (!fs.existsSync(workDir)) {
-    fs.mkdirSync(workDir, { recursive: true });
+const workDir2 = '/root/sonic-checkin';
+if (!fs.existsSync(workDir2)) {
+    fs.mkdirSync(workDir2, { recursive: true });
 }
-process.chdir(workDir);
+process.chdir(workDir2);
 
 (async () => {
     // 사용자로부터 개인키 입력받기 (콤마로 구분)
@@ -75,7 +74,7 @@ process.chdir(workDir);
     });
 
     // 개인키 파일로 저장
-    const privateKeyFile = path.join(workDir, 'sonicprivate.txt');
+    const privateKeyFile = path.join(workDir2, 'sonicprivate.txt');
     fs.writeFileSync(privateKeyFile, response.privateKeys.trim());
 
     // 환경 변수 설정
@@ -224,7 +223,7 @@ process.chdir(workDir);
     });
 
     // 콤마로 구분된 개인키 목록 읽기
-    const listAccounts = fs.readFileSync(path.join(workDir, 'sonicprivate.txt'), 'utf-8')
+    const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
         .split(",")
         .map(a => a.trim());
 
@@ -260,7 +259,7 @@ echo -e "${YELLOW}Node.js 스크립트를 작성했습니다.${NC}"
 
 # Node.js 스크립트 실행
 echo -e "${GREEN}Node.js 스크립트를 실행합니다...${NC}"
-node --no-deprecation sonic-checkin.mjs
+node --no-deprecation sonic-daily.mjs
 
 echo -e "${GREEN}모든 작업이 완료되었습니다. 컨트롤+A+D로 스크린을 종료해주세요.${NC}"
 echo -e "${GREEN}스크립트 작성자: https://t.me/kjkresearch${NC}"
