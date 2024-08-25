@@ -1,9 +1,9 @@
-import fetch from 'node-fetch';
+iimport fetch from 'node-fetch';
 import { Transaction } from '@solana/web3.js';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 // Replace this with the actual connection setup
-const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'); // 예시, 실제 환경에 맞게 수정
+const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
 
 const defaultHeaders = {
     'accept': '*/*',
@@ -36,9 +36,9 @@ const sendTransaction = async (transaction, keyPair) => {
 };
 
 export const openBox = async (keyPair, auth) => {
-    let retries = 0; // 재시도 횟수
+    while (true) { // 무한 루프를 사용하여 계속 시도
+        let retries = 0; // 재시도 횟수
 
-    while (retries <= MAX_RETRIES) {
         try {
             const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
@@ -78,19 +78,25 @@ export const openBox = async (keyPair, auth) => {
 
                 // 성공적으로 미스터리 박스를 열었음
                 return { success: true, message: `성공적으로 미스터리 박스를 열었습니다! ${openData.data.reward}` };
+            } else {
+                throw new Error('데이터가 없습니다.');
             }
         } catch (e) {
             console.error('미스터리 박스 개봉 오류:', e.message);
-            retries++;
-            if (retries > MAX_RETRIES) {
-                // 최대 재시도 횟수를 초과한 경우 실패 메시지 반환
-                return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
+
+            // 429 에러나 기타 오류가 발생했을 때 재시도 로직
+            if (e.message.includes('429') || e.message.includes('에러가 발생했습니다')) {
+                retries++;
+                if (retries > MAX_RETRIES) {
+                    // 최대 재시도 횟수를 초과한 경우 실패 메시지 반환
+                    return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
+                }
+                // 지연 시간 후 재시도
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            } else {
+                // 기타 오류는 즉시 처리
+                return { success: false, message: `미스터리 박스 개봉 오류: ${e.message}` };
             }
-            // 지연 시간 후 재시도
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
         }
     }
-
-    // 이 시점에 도달한 경우, 모든 재시도가 실패했으므로 실패 메시지 반환
-    return { success: false, message: '미스터리 박스 개봉 실패. 최대 재시도 횟수를 초과했습니다. 다음 단계로 넘어갑니다.' };
 };
