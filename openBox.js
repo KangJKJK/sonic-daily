@@ -1,6 +1,10 @@
 import fetch from 'node-fetch';
 import { Transaction } from '@solana/web3.js';
 
+// Replace this with the actual connection setup
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'); // 예시, 실제 환경에 맞게 수정
+
 const defaultHeaders = {
     'accept': '*/*',
     'accept-language': 'en-US,en;q=0.7',
@@ -17,6 +21,18 @@ const defaultHeaders = {
 };
 
 const RETRY_DELAY_MS = 5000; // 지연 시간 설정 (5초)
+
+const sendTransaction = (transaction, keyPair) => new Promise(async (resolve) => {
+    try {
+        transaction.partialSign(keyPair);
+        const rawTransaction = transaction.serialize();
+        const signature = await connection.sendRawTransaction(rawTransaction);
+        await connection.confirmTransaction(signature);
+        resolve(signature);
+    } catch (error) {
+        resolve(error);
+    }
+});
 
 export const openBox = async (keyPair, auth) => {
     let success = false;
