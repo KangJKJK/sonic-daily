@@ -45,6 +45,19 @@ else
     echo -e "${GREEN}npm이 이미 설치되어 있습니다.${NC}"
 fi
 
+# package.json 수정: "type": "module" 추가
+echo -e "${YELLOW}package.json 파일을 수정합니다...${NC}"
+node -e "
+const fs = require('fs');
+const packageJsonPath = './package.json';
+
+let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+packageJson.type = 'module';
+
+fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+console.log('package.json 파일에 \"type\": \"module\"이 추가되었습니다.');
+"
+
 # Node.js 모듈 설치
 echo -e "${YELLOW}필요한 Node.js 모듈을 설치합니다...${NC}"
 npm install
