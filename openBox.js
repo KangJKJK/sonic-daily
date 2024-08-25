@@ -39,7 +39,7 @@ export const openBox = async (keyPair, auth) => {
     let success = false;
     let retries = 0; // 재시도 횟수
 
-    while (!success && retries <= MAX_RETRIES) {
+    while (!success) {
         try {
             const response = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/build-tx', {
                 headers: {
@@ -57,10 +57,13 @@ export const openBox = async (keyPair, auth) => {
             if (data.data) {
                 const transactionBuffer = Buffer.from(data.data.hash, 'base64');
                 const transaction = Transaction.from(transactionBuffer);
-                transaction.partialSign(keyPair);
 
-                // 트랜잭션 전송
+                // 트랜잭션 전송 및 확인
                 const signature = await sendTransaction(transaction, keyPair);
+
+                if (signature instanceof Error) {
+                    throw new Error(`트랜잭션 전송 오류: ${signature.message}`);
+                }
 
                 // 미스터리 박스 개봉 요청
                 const openResponse = await fetch('https://odyssey-api.sonic.game/user/rewards/mystery-box/open', {
