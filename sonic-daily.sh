@@ -76,6 +76,20 @@ if (!fs.existsSync(workDir2)) {
 }
 process.chdir(workDir2);
 
+// 변수 정의
+const captchaKey = 'YOUR_2CAPTCHA_KEY'; // 실제 2Captcha 키로 대체 필요
+const defaultHeaders = {
+    "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
+    "Dnt": "1",
+    "Origin": "https://faucet.sonic.game",
+    "Priority": "u=1, i",
+    "Referer": "https://faucet.sonic.game/",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "Windows",
+};
+
 // 개인키 목록 읽기
 const listAccounts = fs.readFileSync(path.join(workDir2, 'sonicprivate.txt'), 'utf-8')
     .split(",")
@@ -319,10 +333,9 @@ const openBox = async (keyPair, auth) => {
     }
 };
 
-// 각 개인키에 대해 처리 수행
+// 개인키 처리
 (async () => {
-    const totalKeys = listAccounts.length;
-
+    const totalKeys = listAccounts.length; // totalKeys 정의
     for (let i = 0; i < totalKeys; i++) {
         const privateKey = listAccounts[i];
         const keypair = getKeypairFromPrivateKey(privateKey);
