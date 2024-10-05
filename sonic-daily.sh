@@ -61,7 +61,7 @@ console.log('package.json 파일에 \"type\": \"module\"이 추가되었습니�
 # Node.js 모듈 설치
 echo -e "${YELLOW}필요한 Node.js 모듈을 설치합니다...${NC}"
 npm install
-npm install @solana/web3.js chalk bs58 node-fetch
+npm install @solana/web3.js chalk bs58 fetch
 
 # 개인키 입력받기
 read -p "Solana의 개인키를 쉼표로 구분하여 입력하세요: " privkeys
